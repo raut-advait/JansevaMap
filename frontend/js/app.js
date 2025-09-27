@@ -3,32 +3,143 @@ let map = null;
 let currentMarker = null;
 let selectedLocation = null;
 let issuesData = [];
+let livabilityData = [];
 let isFormOpen = false;
 let mapClickHandler = null;
 
+// Livability scoring data for Palghar areas
+const livabilityScores = {
+    'Palghar City': {
+        overall: 78,
+        infrastructure: 75,
+        safety: 82,
+        cleanliness: 70,
+        connectivity: 85,
+        healthcare: 80,
+        education: 75,
+        environment: 73,
+        description: 'Well-connected railway town with good amenities',
+        improvements: ['Better waste management', 'More green spaces']
+    },
+    'Vasai East': {
+        overall: 82,
+        infrastructure: 85,
+        safety: 80,
+        cleanliness: 78,
+        connectivity: 88,
+        healthcare: 82,
+        education: 85,
+        environment: 75,
+        description: 'Modern residential area with excellent connectivity',
+        improvements: ['Air quality improvement', 'Traffic management']
+    },
+    'Vasai West': {
+        overall: 79,
+        infrastructure: 80,
+        safety: 78,
+        cleanliness: 75,
+        connectivity: 85,
+        healthcare: 78,
+        education: 80,
+        environment: 80,
+        description: 'Coastal area with beaches and growing infrastructure',
+        improvements: ['Coastal erosion control', 'Public transport']
+    },
+    'Virar East': {
+        overall: 76,
+        infrastructure: 72,
+        safety: 75,
+        cleanliness: 70,
+        connectivity: 82,
+        healthcare: 75,
+        education: 78,
+        environment: 72,
+        description: 'Rapidly developing area with mixed residential-industrial zones',
+        improvements: ['Industrial pollution control', 'Better drainage']
+    },
+    'Virar West': {
+        overall: 80,
+        infrastructure: 78,
+        safety: 82,
+        cleanliness: 76,
+        connectivity: 88,
+        healthcare: 80,
+        education: 82,
+        environment: 75,
+        description: 'Popular residential hub with excellent rail connectivity',
+        improvements: ['Water supply consistency', 'Park development']
+    },
+    'Nalasopara East': {
+        overall: 74,
+        infrastructure: 70,
+        safety: 72,
+        cleanliness: 68,
+        connectivity: 80,
+        healthcare: 75,
+        education: 78,
+        environment: 70,
+        description: 'Growing residential area with affordable housing',
+        improvements: ['Road quality', 'Sanitation systems']
+    },
+    'Nalasopara West': {
+        overall: 77,
+        infrastructure: 75,
+        safety: 78,
+        cleanliness: 72,
+        connectivity: 85,
+        healthcare: 78,
+        education: 80,
+        environment: 73,
+        description: 'Well-established area near railway station',
+        improvements: ['Street lighting', 'Waste collection efficiency']
+    },
+    'Boisar': {
+        overall: 71,
+        infrastructure: 68,
+        safety: 75,
+        cleanliness: 65,
+        connectivity: 70,
+        healthcare: 72,
+        education: 75,
+        environment: 68,
+        description: 'Industrial town with basic amenities',
+        improvements: ['Industrial waste management', 'Healthcare facilities']
+    },
+    'Dahanu': {
+        overall: 83,
+        infrastructure: 75,
+        safety: 88,
+        cleanliness: 85,
+        connectivity: 72,
+        healthcare: 78,
+        education: 80,
+        environment: 92,
+        description: 'Coastal town with excellent environment and low pollution',
+        improvements: ['Better road connectivity', 'Digital infrastructure']
+    }
+};
+
 // Wait for everything to load completely
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing...');
+    console.log('DOM loaded, initializing with livability features...');
     
-    // Small delay to ensure all resources are loaded
     setTimeout(() => {
         initializeMap();
         initializeEventListeners();
-        loadIssues();
+        initializeLivabilityFeatures();
+        loadExpandedIssues();
     }, 500);
 });
 
-// Initialize Leaflet map with multiple fallbacks
+// Initialize Leaflet map with livability integration
 function initializeMap() {
     try {
-        console.log('Initializing map...');
+        console.log('Initializing map with livability...');
         
-        // Destroy existing map if any
         if (map) {
             map.remove();
         }
         
-        // Create map with explicit options
         map = L.map('map', {
             center: [19.4559, 72.7971],
             zoom: 11,
@@ -40,7 +151,6 @@ function initializeMap() {
             dragging: true
         });
 
-        // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 18
@@ -48,10 +158,9 @@ function initializeMap() {
 
         console.log('Map initialized successfully');
         
-        // Set up click handler - MULTIPLE APPROACHES for guaranteed working
         setupMapClickHandler();
+        addLivabilityControls();
         
-        // Ensure map is properly rendered
         setTimeout(() => {
             if (map) {
                 map.invalidateSize();
@@ -61,84 +170,234 @@ function initializeMap() {
         
     } catch (error) {
         console.error('Error initializing map:', error);
-        // Retry after 2 seconds
         setTimeout(initializeMap, 2000);
     }
 }
 
-// Setup map click handler with multiple fallbacks
+// Add livability controls to map
+function addLivabilityControls() {
+    const livabilityControl = L.control({position: 'topright'});
+    
+    livabilityControl.onAdd = function(map) {
+        const div = L.DomUtil.create('div', 'livability-control');
+        div.innerHTML = `
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 10px;">
+                <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px;">🏆 Livability Overview</h4>
+                <div id="livability-summary-map" style="font-size: 12px;"></div>
+                <button onclick="toggleLivabilityLayer()" style="margin-top: 8px; padding: 5px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                    Toggle Livability View
+                </button>
+            </div>
+        `;
+        return div;
+    };
+    
+    livabilityControl.addTo(map);
+    updateMapLivabilitySummary();
+}
+
+// Update map livability summary
+function updateMapLivabilitySummary() {
+    const summaryDiv = document.getElementById('livability-summary-map');
+    if (!summaryDiv) return;
+    
+    const cities = Object.keys(livabilityScores);
+    const avgScore = Math.round(cities.reduce((sum, city) => sum + livabilityScores[city].overall, 0) / cities.length);
+    
+    const topCity = cities.reduce((top, city) => 
+        livabilityScores[city].overall > livabilityScores[top].overall ? city : top
+    );
+    
+    summaryDiv.innerHTML = `
+        <div style="text-align: center; margin-bottom: 8px;">
+            <div style="font-size: 18px; font-weight: bold; color: ${getLivabilityColor(avgScore)};">
+                ${avgScore}/100
+            </div>
+            <div style="font-size: 10px; color: #666;">District Average</div>
+        </div>
+        <div style="font-size: 11px;">
+            <strong>🥇 Best:</strong> ${topCity}<br>
+            <span style="color: ${getLivabilityColor(livabilityScores[topCity].overall)};">${livabilityScores[topCity].overall}/100</span>
+        </div>
+    `;
+}
+
+// Toggle livability layer view
+function toggleLivabilityLayer() {
+    // Implementation for showing/hiding livability data on map
+    if (window.livabilityLayerVisible) {
+        hideLivabilityMarkers();
+        window.livabilityLayerVisible = false;
+    } else {
+        showLivabilityMarkers();
+        window.livabilityLayerVisible = true;
+    }
+}
+
+// Show livability markers
+function showLivabilityMarkers() {
+    Object.keys(livabilityScores).forEach(cityName => {
+        const coordinates = getCityCoordinates(cityName);
+        if (coordinates) {
+            const score = livabilityScores[cityName].overall;
+            const marker = L.marker(coordinates, {
+                icon: L.divIcon({
+                    className: 'livability-marker',
+                    html: `<div style="background: ${getLivabilityColor(score)}; color: white; padding: 3px 6px; border-radius: 12px; font-size: 12px; font-weight: bold; text-align: center; min-width: 30px;">${score}</div>`,
+                    iconSize: [40, 20],
+                    iconAnchor: [20, 10]
+                })
+            }).addTo(map);
+            
+            marker.bindPopup(createLivabilityPopup(cityName, livabilityScores[cityName]));
+            marker.livabilityMarker = true;
+        }
+    });
+}
+
+// Hide livability markers
+function hideLivabilityMarkers() {
+    map.eachLayer(function(layer) {
+        if (layer.livabilityMarker) {
+            map.removeLayer(layer);
+        }
+    });
+}
+
+// Get city coordinates
+function getCityCoordinates(cityName) {
+    const coordinates = {
+        'Palghar City': [19.6961, 72.7693],
+        'Vasai East': [19.4034, 72.8209],
+        'Vasai West': [19.3912, 72.8254],
+        'Virar East': [19.4578, 72.7989],
+        'Virar West': [19.4559, 72.7971],
+        'Nalasopara East': [19.4239, 72.7890],
+        'Nalasopara West': [19.4156, 72.7823],
+        'Boisar': [19.8031, 72.7569],
+        'Dahanu': [19.9703, 72.7344]
+    };
+    return coordinates[cityName];
+}
+
+// Create livability popup
+function createLivabilityPopup(cityName, livabilityData) {
+    return `
+        <div style="min-width: 250px;">
+            <h4 style="margin: 0 0 10px 0; color: #333;">🏆 ${cityName} Livability</h4>
+            <div style="text-align: center; margin-bottom: 10px;">
+                <div style="font-size: 24px; font-weight: bold; color: ${getLivabilityColor(livabilityData.overall)};">
+                    ${livabilityData.overall}/100
+                </div>
+            </div>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">${livabilityData.description}</p>
+            <div style="margin-top: 10px;">
+                <strong>Key Scores:</strong><br>
+                🏗️ Infrastructure: ${livabilityData.infrastructure}<br>
+                🛡️ Safety: ${livabilityData.safety}<br>
+                🧹 Cleanliness: ${livabilityData.cleanliness}<br>
+                🚌 Connectivity: ${livabilityData.connectivity}
+            </div>
+            <button onclick="showDetailedLivability('${cityName}')" style="margin-top: 8px; width: 100%; padding: 6px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                View Detailed Report
+            </button>
+        </div>
+    `;
+}
+
+// Get livability color for text/backgrounds
+function getLivabilityColor(score) {
+    if (score >= 80) return '#28a745';
+    if (score >= 70) return '#ffc107';
+    if (score >= 60) return '#fd7e14';
+    return '#dc3545';
+}
+
+// Initialize livability features
+function initializeLivabilityFeatures() {
+    addLivabilityDashboard();
+    window.livabilityLayerVisible = false;
+}
+
+// Add livability dashboard to sidebar
+function addLivabilityDashboard() {
+    const sidebar = document.querySelector('.complaints-sidebar');
+    if (!sidebar) return;
+    
+    const livabilitySection = document.createElement('div');
+    livabilitySection.innerHTML = `
+        <div class="livability-dashboard" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
+            <h4 style="margin: 0 0 15px 0; color: #333; text-align: center;">🏆 District Livability</h4>
+            <div id="livability-dashboard-content"></div>
+            <button onclick="showFullLivabilityReport()" style="width: 100%; margin-top: 10px; padding: 8px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                📊 View Full Report
+            </button>
+        </div>
+    `;
+    
+    sidebar.insertBefore(livabilitySection, sidebar.firstChild);
+    updateLivabilityDashboard();
+}
+
+// Update livability dashboard
+function updateLivabilityDashboard() {
+    const content = document.getElementById('livability-dashboard-content');
+    if (!content) return;
+    
+    const cities = Object.keys(livabilityScores);
+    const avgScore = Math.round(cities.reduce((sum, city) => sum + livabilityScores[city].overall, 0) / cities.length);
+    
+    const topCities = cities
+        .sort((a, b) => livabilityScores[b].overall - livabilityScores[a].overall)
+        .slice(0, 3);
+    
+    content.innerHTML = `
+        <div style="text-align: center; margin-bottom: 12px;">
+            <div style="font-size: 20px; font-weight: bold; color: ${getLivabilityColor(avgScore)};">
+                ${avgScore}/100
+            </div>
+            <div style="font-size: 12px; color: #666;">Average Score</div>
+        </div>
+        
+        <div>
+            <h6 style="margin: 0 0 8px 0; color: #333; font-size: 13px;">🥇 Top Areas</h6>
+            ${topCities.map((city, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px; background: white; border-radius: 4px; margin-bottom: 4px; font-size: 12px;">
+                    <span>${index + 1}. ${city}</span>
+                    <span style="font-weight: bold; color: ${getLivabilityColor(livabilityScores[city].overall)};">
+                        ${livabilityScores[city].overall}
+                    </span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Setup map click handler with livability integration
 function setupMapClickHandler() {
     if (!map) return;
     
-    // Remove any existing click handlers
     map.off('click');
     
-    // Add single, reliable click handler
     map.on('click', function(e) {
         if (!isFormOpen) return;
         
-        console.log('Map clicked:', e.latlng);
+        console.log('Map clicked with livability:', e.latlng);
         selectedLocation = e.latlng;
         
-        // Remove existing marker
         if (currentMarker) {
             map.removeLayer(currentMarker);
         }
         
-        // Add new marker
+        // Get area info including livability
+        const areaName = getAreaName(e.latlng.lat, e.latlng.lng);
+        const cityName = extractCityName(areaName);
+        const livabilityInfo = livabilityScores[cityName];
+        
         currentMarker = L.marker(e.latlng, {
-            draggable: true // Make marker draggable for position adjustment
-        }).addTo(map);
-        
-        // Update location input
-        const locationInput = document.getElementById('complaint-location');
-        if (locationInput) {
-            const areaName = getAreaName(e.latlng.lat, e.latlng.lng);
-            locationInput.value = areaName;
-        }
-        
-        // Enable submit button
-        const submitBtn = document.querySelector('#complaint-form-element button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.style.opacity = '1';
-            submitBtn.style.cursor = 'pointer';
-        }
-        
-        // Show success feedback
-        showLocationSelectedFeedback();
-    });
-}
-
-// Centralized map click handler
-function handleMapClick(e) {
-    console.log('handleMapClick called with:', e.latlng, 'Form open:', isFormOpen);
-    
-    // Only allow location selection when form is open
-    if (!isFormOpen) {
-        console.log('Form not open, ignoring click');
-        return;
-    }
-    
-    // Prevent event bubbling
-    if (e.originalEvent) {
-        e.originalEvent.stopPropagation();
-    }
-    
-    selectedLocation = e.latlng;
-    console.log('Location selected:', selectedLocation);
-    
-    // Remove existing marker
-    if (currentMarker) {
-        map.removeLayer(currentMarker);
-        console.log('Previous marker removed');
-    }
-    
-    // Create new marker with custom red icon
-    try {
-        currentMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+            draggable: true,
             icon: L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                iconUrl: livabilityInfo ? getLivabilityMarkerIcon(livabilityInfo.overall) : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
                 iconSize: [25, 41],
                 iconAnchor: [12, 41],
@@ -147,64 +406,77 @@ function handleMapClick(e) {
             })
         }).addTo(map);
         
-        console.log('New marker added');
+        // Enhanced popup with livability
+        const popupContent = `
+            <div style="text-align: center; min-width: 200px;">
+                <h4 style="margin: 0 0 10px 0; color: #333;">📍 Location Selected</h4>
+                <p style="margin: 5px 0;"><strong>Area:</strong> ${areaName}</p>
+                ${livabilityInfo ? `
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 6px; margin-top: 10px;">
+                        <h5 style="margin: 0 0 5px 0; color: #667eea;">🏆 Livability Score</h5>
+                        <div style="font-size: 20px; font-weight: bold; color: ${getLivabilityColor(livabilityInfo.overall)};">
+                            ${livabilityInfo.overall}/100
+                        </div>
+                        <p style="font-size: 11px; margin: 3px 0; color: #666;">
+                            ${livabilityInfo.description}
+                        </p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
         
-        // Update location input
-        const areaName = getAreaName(e.latlng.lat, e.latlng.lng);
+        currentMarker.bindPopup(popupContent).openPopup();
+        
         const locationInput = document.getElementById('complaint-location');
         if (locationInput) {
             locationInput.value = areaName;
-            console.log('Location input updated:', areaName);
         }
         
-        // Show success popup
-        currentMarker.bindPopup(`
-            <div style="text-align: center; font-weight: bold; color: green;">
-                ✅ Location Selected!<br>
-                📍 ${areaName}
-            </div>
-        `).openPopup();
-        
-        // Enable submit button
         const submitBtn = document.querySelector('#complaint-form-element button[type="submit"]');
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
             submitBtn.style.cursor = 'pointer';
-            console.log('Submit button enabled');
         }
         
-        // Visual feedback
         showLocationSelectedFeedback();
-        
-    } catch (error) {
-        console.error('Error creating marker:', error);
-    }
+    });
 }
 
-// Visual feedback for location selection
-function showLocationSelectedFeedback() {
-    // Temporary visual feedback
-    const mapContainer = document.getElementById('map');
-    if (mapContainer) {
-        mapContainer.style.border = '3px solid #28a745';
-        setTimeout(() => {
-            mapContainer.style.border = 'none';
-        }, 1000);
+// Get livability marker icon based on score
+function getLivabilityMarkerIcon(score) {
+    if (score >= 80) return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png';
+    if (score >= 70) return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png';
+    if (score >= 60) return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png';
+    return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
+}
+
+// Extract city name from area string
+function extractCityName(areaString) {
+    const cityMappings = {
+        'Palghar': 'Palghar City',
+        'Vasai': 'Vasai East',
+        'Virar': 'Virar West',
+        'Nalasopara': 'Nalasopara East',
+        'Boisar': 'Boisar',
+        'Dahanu': 'Dahanu'
+    };
+    
+    for (const [key, value] of Object.entries(cityMappings)) {
+        if (areaString.toLowerCase().includes(key.toLowerCase())) {
+            return value;
+        }
     }
     
-    // Show temporary success message
-    showAlert('📍 Location selected successfully! You can now submit your complaint.', 'success');
+    return null;
 }
 
 // Initialize all event listeners
 function initializeEventListeners() {
-    console.log('Setting up event listeners...');
+    console.log('Setting up enhanced event listeners...');
     
-    // Report Issue button - GUARANTEED TO WORK
     const reportBtn = document.getElementById('add-complaint-btn');
     if (reportBtn) {
-        // Remove any existing listeners
         reportBtn.replaceWith(reportBtn.cloneNode(true));
         const newReportBtn = document.getElementById('add-complaint-btn');
         
@@ -218,7 +490,6 @@ function initializeEventListeners() {
         console.log('Report button listener added');
     }
     
-    // Cancel complaint button
     const cancelBtn = document.getElementById('cancel-complaint');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', function(e) {
@@ -229,7 +500,6 @@ function initializeEventListeners() {
         console.log('Cancel button listener added');
     }
     
-    // Refresh button
     const refreshBtn = document.getElementById('refresh-btn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function(e) {
@@ -237,7 +507,7 @@ function initializeEventListeners() {
             console.log('Refresh button clicked');
             this.innerHTML = '<span class="loading"></span> Refreshing...';
             setTimeout(() => {
-                loadIssues();
+                loadExpandedIssues();
                 showAlert('🔄 Data refreshed successfully!', 'success');
                 this.textContent = '🔄 Refresh';
             }, 1000);
@@ -245,7 +515,6 @@ function initializeEventListeners() {
         console.log('Refresh button listener added');
     }
     
-    // Filter dropdown
     const filterSelect = document.getElementById('issue-type-filter');
     if (filterSelect) {
         filterSelect.addEventListener('change', function() {
@@ -255,7 +524,6 @@ function initializeEventListeners() {
         console.log('Filter listener added');
     }
     
-    // Form submission
     const complaintForm = document.getElementById('complaint-form-element');
     if (complaintForm) {
         complaintForm.addEventListener('submit', function(e) {
@@ -266,7 +534,6 @@ function initializeEventListeners() {
         console.log('Form submission listener added');
     }
     
-    // Close form when clicking outside
     const formOverlay = document.getElementById('complaint-form');
     if (formOverlay) {
         formOverlay.addEventListener('click', function(e) {
@@ -278,7 +545,6 @@ function initializeEventListeners() {
         console.log('Form overlay listener added');
     }
     
-    // Escape key to close form
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && isFormOpen) {
             console.log('Escape key pressed');
@@ -286,7 +552,7 @@ function initializeEventListeners() {
         }
     });
     
-    console.log('All event listeners set up successfully');
+    console.log('All enhanced event listeners set up successfully');
 }
 
 // Show complaint form with enhanced debugging
@@ -300,7 +566,6 @@ function showComplaintForm() {
         formElement.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         
-        // Reset form and map state
         const form = document.getElementById('complaint-form-element');
         if (form) {
             form.reset();
@@ -312,14 +577,11 @@ function showComplaintForm() {
         }
         selectedLocation = null;
         
-        // Ensure map is clickable
         if (map) {
             map.getContainer().style.cursor = 'crosshair';
-            // Refresh map click handler
             setupMapClickHandler();
         }
         
-        // Show instruction popup
         const instructionPopup = L.popup({
             closeButton: false,
             autoClose: false,
@@ -329,7 +591,8 @@ function showComplaintForm() {
         .setContent(`
             <div style="text-align: center; padding: 10px; font-weight: bold; color: #007bff;">
                 🎯 Click anywhere on the map<br>
-                to select the issue location
+                to select the issue location<br>
+                <small style="color: #666;">Livability data will be shown</small>
             </div>
         `)
         .openOn(map);
@@ -354,13 +617,11 @@ function hideComplaintForm() {
         document.body.style.overflow = 'auto';
         console.log('Form hidden, isFormOpen set to:', isFormOpen);
         
-        // Reset form
         const form = document.getElementById('complaint-form-element');
         if (form) {
             form.reset();
         }
         
-        // Remove marker
         if (currentMarker) {
             map.removeLayer(currentMarker);
             currentMarker = null;
@@ -369,7 +630,6 @@ function hideComplaintForm() {
         
         selectedLocation = null;
         
-        // Reset map cursor
         if (map) {
             map.getContainer().style.cursor = '';
         }
@@ -378,16 +638,28 @@ function hideComplaintForm() {
     }
 }
 
-// Handle form submission
+// Visual feedback for location selection
+function showLocationSelectedFeedback() {
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+        mapContainer.style.border = '3px solid #28a745';
+        setTimeout(() => {
+            mapContainer.style.border = 'none';
+        }, 1000);
+    }
+    
+    showAlert('📍 Location selected successfully! Livability data included.', 'success');
+}
+
+// Handle form submission with livability context
 async function handleComplaintSubmission(e) {
     e.preventDefault();
-    console.log('handleComplaintSubmission called');
+    console.log('handleComplaintSubmission called with livability');
     
     if (!selectedLocation) {
         console.log('No location selected');
         showAlert('❌ Please click on the map to select a location first!', 'error');
         
-        // Flash the map to draw attention
         const mapContainer = document.getElementById('map');
         if (mapContainer) {
             mapContainer.style.border = '3px solid #dc3545';
@@ -399,6 +671,10 @@ async function handleComplaintSubmission(e) {
     }
     
     const formData = new FormData(e.target);
+    const areaName = getAreaName(selectedLocation.lat, selectedLocation.lng);
+    const cityName = extractCityName(areaName);
+    const livabilityInfo = livabilityScores[cityName];
+    
     const complaintData = {
         issue_type: formData.get('type'),
         description: formData.get('description'),
@@ -406,12 +682,13 @@ async function handleComplaintSubmission(e) {
         contact_number: formData.get('contact'),
         priority: formData.get('priority'),
         latitude: selectedLocation.lat,
-        longitude: selectedLocation.lng
+        longitude: selectedLocation.lng,
+        city: cityName,
+        livability_score: livabilityInfo ? livabilityInfo.overall : null
     };
     
-    console.log('Submitting complaint:', complaintData);
+    console.log('Submitting complaint with livability:', complaintData);
     
-    // Show loading state
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.innerHTML = '<span class="loading"></span> Submitting...';
@@ -421,10 +698,10 @@ async function handleComplaintSubmission(e) {
         await simulateComplaintSubmission(complaintData);
         
         const referenceId = 'PLG' + Date.now().toString().slice(-6);
-        showAlert(`✅ Complaint submitted successfully!<br>📋 Reference ID: ${referenceId}`, 'success');
+        showAlert(`✅ Complaint submitted successfully!<br>📋 Reference ID: ${referenceId}${livabilityInfo ? `<br>📊 Area Score: ${livabilityInfo.overall}/100` : ''}`, 'success');
         
         hideComplaintForm();
-        loadIssues(); // Refresh the map
+        loadExpandedIssues();
         
     } catch (error) {
         console.error('Error submitting complaint:', error);
@@ -435,7 +712,7 @@ async function handleComplaintSubmission(e) {
     }
 }
 
-// Get area name based on coordinates
+// Get area name based on coordinates with enhanced mapping
 function getAreaName(lat, lng) {
     const areas = [
         { name: 'Palghar City', lat: 19.6961, lng: 72.7693, radius: 0.05 },
@@ -476,7 +753,9 @@ function simulateComplaintSubmission(data) {
                 location: data.location,
                 contact: data.contact_number,
                 reporter: 'Current User',
-                reported_date: new Date().toISOString().split('T')[0]
+                reported_date: new Date().toISOString().split('T')[0],
+                city: data.city,
+                livability_score: data.livability_score
             };
             
             issuesData.push(newIssue);
@@ -485,103 +764,402 @@ function simulateComplaintSubmission(data) {
     });
 }
 
-// Load sample issues
-async function loadIssues() {
+// Load expanded issues with many more complaints
+async function loadExpandedIssues() {
     try {
-        console.log('Loading issues...');
-        issuesData = await loadSampleIssues();
+        console.log('Loading expanded issues...');
+        issuesData = await loadManyMoreIssues();
         displayIssuesOnMap();
         updateComplaintsSidebar();
-        console.log('Issues loaded successfully');
+        console.log('Expanded issues loaded successfully');
     } catch (error) {
         console.error('Error loading issues:', error);
         showAlert('Failed to load issues data', 'error');
     }
 }
 
-// Sample data
-function loadSampleIssues() {
+// Expanded sample data with many more complaints
+function loadManyMoreIssues() {
     return new Promise((resolve) => {
         setTimeout(() => {
-            const sampleIssues = [
+            const expandedIssues = [
+                // Palghar City Issues
                 {
                     id: 'PLG001',
                     title: 'Major Pothole on NH8',
-                    description: 'Deep pothole causing accidents near Palghar Railway Station',
+                    description: 'Deep pothole causing accidents near Palghar Railway Station affecting daily commuters',
                     type: 'road',
                     priority: 'urgent',
                     status: 'pending',
                     coordinates: [19.6961, 72.7693],
-                    location: 'Palghar Railway Station',
+                    location: 'NH8, Palghar Railway Station',
                     contact: '9876543210',
                     reporter: 'Ramesh Patil',
-                    reported_date: '2025-01-25'
+                    reported_date: '2025-01-25',
+                    city: 'Palghar City'
                 },
                 {
-                    id: 'VAS001',
+                    id: 'PLG002',
+                    title: 'Street Light Malfunction',
+                    description: 'Multiple street lights not working in residential area for past 2 weeks',
+                    type: 'electricity',
+                    priority: 'medium',
+                    status: 'processing',
+                    coordinates: [19.6950, 72.7680],
+                    location: 'Residential Area Phase 2, Palghar',
+                    contact: '9876543211',
+                    reporter: 'Sunita Sharma',
+                    reported_date: '2025-01-23',
+                    city: 'Palghar City'
+                },
+                {
+                    id: 'PLG003',
                     title: 'Water Pipeline Burst',
-                    description: 'Major water leak on main road causing flooding',
+                    description: 'Major water leak flooding the main market area',
                     type: 'water',
                     priority: 'urgent',
                     status: 'processing',
-                    coordinates: [19.4056, 72.8234],
-                    location: 'Vasai Junction',
+                    coordinates: [19.6970, 72.7700],
+                    location: 'Main Market, Palghar City',
                     contact: '9876543212',
-                    reporter: 'Sunita Sharma',
-                    reported_date: '2025-01-26'
-                },
-                {
-                    id: 'VIR001',
-                    title: 'Street Light Not Working',
-                    description: 'Multiple street lights not working in residential area',
-                    type: 'electricity',
-                    priority: 'medium',
-                    status: 'pending',
-                    coordinates: [19.4559, 72.7971],
-                    location: 'Virar West Station Road',
-                    contact: '9876543210',
                     reporter: 'Vikash Joshi',
-                    reported_date: '2025-01-21'
+                    reported_date: '2025-01-26',
+                    city: 'Palghar City'
+                },
+                
+                // Vasai East Issues
+                {
+                    id: 'VAS001',
+                    title: 'Traffic Signal Not Working',
+                    description: 'Main junction traffic light malfunctioning causing heavy congestion',
+                    type: 'traffic',
+                    priority: 'high',
+                    status: 'pending',
+                    coordinates: [19.4034, 72.8209],
+                    location: 'Vasai East Junction',
+                    contact: '9876543213',
+                    reporter: 'Priya Nair',
+                    reported_date: '2025-01-24',
+                    city: 'Vasai East'
                 },
                 {
-                    id: 'NAL001',
-                    title: 'Garbage Collection Issue',
-                    description: 'Garbage not collected for a week in residential area',
+                    id: 'VAS002',
+                    title: 'Garbage Collection Delay',
+                    description: 'Garbage not collected for 5 days in residential complex',
                     type: 'sanitation',
                     priority: 'high',
                     status: 'resolved',
+                    coordinates: [19.4040, 72.8220],
+                    location: 'Green Valley Complex, Vasai East',
+                    contact: '9876543214',
+                    reporter: 'Amit Kumar',
+                    reported_date: '2025-01-22',
+                    city: 'Vasai East'
+                },
+                {
+                    id: 'VAS003',
+                    title: 'Drainage Blockage',
+                    description: 'Severe waterlogging during monsoon due to blocked drains',
+                    type: 'drainage',
+                    priority: 'high',
+                    status: 'processing',
+                    coordinates: [19.4025, 72.8200],
+                    location: 'Station Road, Vasai East',
+                    contact: '9876543215',
+                    reporter: 'Meera Desai',
+                    reported_date: '2025-01-25',
+                    city: 'Vasai East'
+                },
+                
+                // Vasai West Issues
+                {
+                    id: 'VAS004',
+                    title: 'Beach Road Damage',
+                    description: 'Road severely damaged due to coastal erosion',
+                    type: 'road',
+                    priority: 'medium',
+                    status: 'pending',
+                    coordinates: [19.3912, 72.8254],
+                    location: 'Beach Road, Vasai West',
+                    contact: '9876543216',
+                    reporter: 'Rajesh Patil',
+                    reported_date: '2025-01-23',
+                    city: 'Vasai West'
+                },
+                {
+                    id: 'VAS005',
+                    title: 'Public Toilet Maintenance',
+                    description: 'Public toilet facility near beach needs immediate cleaning and repair',
+                    type: 'sanitation',
+                    priority: 'medium',
+                    status: 'pending',
+                    coordinates: [19.3920, 72.8260],
+                    location: 'Vasai Beach Public Area',
+                    contact: '9876543217',
+                    reporter: 'Kavita Singh',
+                    reported_date: '2025-01-24',
+                    city: 'Vasai West'
+                },
+                
+                // Virar West Issues
+                {
+                    id: 'VIR001',
+                    title: 'Power Outage Problem',
+                    description: 'Frequent power cuts affecting residential area',
+                    type: 'electricity',
+                    priority: 'high',
+                    status: 'processing',
+                    coordinates: [19.4559, 72.7971],
+                    location: 'Station Road, Virar West',
+                    contact: '9876543218',
+                    reporter: 'Deepak Sharma',
+                    reported_date: '2025-01-21',
+                    city: 'Virar West'
+                },
+                {
+                    id: 'VIR002',
+                    title: 'Water Quality Issue',
+                    description: 'Poor water quality and irregular supply in housing society',
+                    type: 'water',
+                    priority: 'medium',
+                    status: 'pending',
+                    coordinates: [19.4570, 72.7980],
+                    location: 'Shanti Nagar, Virar West',
+                    contact: '9876543219',
+                    reporter: 'Sushma Gupta',
+                    reported_date: '2025-01-25',
+                    city: 'Virar West'
+                },
+                {
+                    id: 'VIR003',
+                    title: 'Road Construction Debris',
+                    description: 'Construction material blocking main road for weeks',
+                    type: 'road',
+                    priority: 'medium',
+                    status: 'resolved',
+                    coordinates: [19.4550, 72.7960],
+                    location: 'Main Market Road, Virar West',
+                    contact: '9876543220',
+                    reporter: 'Ravi Patel',
+                    reported_date: '2025-01-20',
+                    city: 'Virar West'
+                },
+                
+                // Virar East Issues
+                {
+                    id: 'VIR004',
+                    title: 'Industrial Pollution',
+                    description: 'Air pollution from nearby factories affecting residential area',
+                    type: 'environment',
+                    priority: 'high',
+                    status: 'pending',
+                    coordinates: [19.4578, 72.7989],
+                    location: 'Industrial Area, Virar East',
+                    contact: '9876543221',
+                    reporter: 'Anjali Rao',
+                    reported_date: '2025-01-26',
+                    city: 'Virar East'
+                },
+                {
+                    id: 'VIR005',
+                    title: 'Drainage Overflow',
+                    description: 'Sewage overflow causing health hazards',
+                    type: 'sanitation',
+                    priority: 'urgent',
+                    status: 'processing',
+                    coordinates: [19.4585, 72.7995],
+                    location: 'Residential Colony, Virar East',
+                    contact: '9876543222',
+                    reporter: 'Mohan Trivedi',
+                    reported_date: '2025-01-25',
+                    city: 'Virar East'
+                },
+                
+                // Nalasopara East Issues
+                {
+                    id: 'NAL001',
+                    title: 'Road Surface Damage',
+                    description: 'Multiple potholes making road unusable for vehicles',
+                    type: 'road',
+                    priority: 'high',
+                    status: 'pending',
                     coordinates: [19.4239, 72.7890],
-                    location: 'Nalasopara East',
-                    contact: '9876543210',
-                    reporter: 'Priya Nair',
-                    reported_date: '2025-01-20'
+                    location: 'Main Connector Road, Nalasopara East',
+                    contact: '9876543223',
+                    reporter: 'Neha Jain',
+                    reported_date: '2025-01-24',
+                    city: 'Nalasopara East'
+                },
+                {
+                    id: 'NAL002',
+                    title: 'Water Supply Interruption',
+                    description: 'No water supply for 3 days in multiple buildings',
+                    type: 'water',
+                    priority: 'urgent',
+                    status: 'processing',
+                    coordinates: [19.4245, 72.7895],
+                    location: 'Housing Complex, Nalasopara East',
+                    contact: '9876543224',
+                    reporter: 'Vinod Kumar',
+                    reported_date: '2025-01-26',
+                    city: 'Nalasopara East'
+                },
+                {
+                    id: 'NAL003',
+                    title: 'Street Vendor Encroachment',
+                    description: 'Illegal vendors blocking pedestrian walkway',
+                    type: 'other',
+                    priority: 'low',
+                    status: 'pending',
+                    coordinates: [19.4230, 72.7885],
+                    location: 'Market Area, Nalasopara East',
+                    contact: '9876543225',
+                    reporter: 'Lakshmi Iyer',
+                    reported_date: '2025-01-23',
+                    city: 'Nalasopara East'
+                },
+                
+                // Nalasopara West Issues
+                {
+                    id: 'NAL004',
+                    title: 'Parking Space Issue',
+                    description: 'Inadequate parking causing traffic congestion near station',
+                    type: 'traffic',
+                    priority: 'medium',
+                    status: 'pending',
+                    coordinates: [19.4156, 72.7823],
+                    location: 'Station Approach, Nalasopara West',
+                    contact: '9876543226',
+                    reporter: 'Suresh Yadav',
+                    reported_date: '2025-01-22',
+                    city: 'Nalasopara West'
+                },
+                {
+                    id: 'NAL005',
+                    title: 'Public Park Maintenance',
+                    description: 'Park equipment broken and garden poorly maintained',
+                    type: 'other',
+                    priority: 'low',
+                    status: 'resolved',
+                    coordinates: [19.4160, 72.7830],
+                    location: 'Community Park, Nalasopara West',
+                    contact: '9876543227',
+                    reporter: 'Pooja Mehta',
+                    reported_date: '2025-01-21',
+                    city: 'Nalasopara West'
+                },
+                
+                // Boisar Issues
+                {
+                    id: 'BOI001',
+                    title: 'Industrial Waste Management',
+                    description: 'Improper disposal of industrial waste affecting environment',
+                    type: 'environment',
+                    priority: 'high',
+                    status: 'processing',
+                    coordinates: [19.8031, 72.7569],
+                    location: 'Industrial Zone, Boisar',
+                    contact: '9876543228',
+                    reporter: 'Ganesh Sawant',
+                    reported_date: '2025-01-25',
+                    city: 'Boisar'
+                },
+                {
+                    id: 'BOI002',
+                    title: 'Healthcare Facility Access',
+                    description: 'Need for additional healthcare facilities in the area',
+                    type: 'other',
+                    priority: 'medium',
+                    status: 'pending',
+                    coordinates: [19.8040, 72.7575],
+                    location: 'Residential Area, Boisar',
+                    contact: '9876543229',
+                    reporter: 'Dr. Ashok Patil',
+                    reported_date: '2025-01-24',
+                    city: 'Boisar'
+                },
+                {
+                    id: 'BOI003',
+                    title: 'Road Connectivity Issue',
+                    description: 'Poor road connectivity to main highway affecting transportation',
+                    type: 'road',
+                    priority: 'medium',
+                    status: 'pending',
+                    coordinates: [19.8025, 72.7560],
+                    location: 'Highway Connector, Boisar',
+                    contact: '9876543230',
+                    reporter: 'Madhav Singh',
+                    reported_date: '2025-01-23',
+                    city: 'Boisar'
+                },
+                
+                // Dahanu Issues
+                {
+                    id: 'DAH001',
+                    title: 'Beach Cleaning Required',
+                    description: 'Beach area needs regular cleaning and waste management',
+                    type: 'sanitation',
+                    priority: 'medium',
+                    status: 'processing',
+                    coordinates: [19.9703, 72.7344],
+                    location: 'Dahanu Beach',
+                    contact: '9876543231',
+                    reporter: 'Coastal Committee',
+                    reported_date: '2025-01-26',
+                    city: 'Dahanu'
+                },
+                {
+                    id: 'DAH002',
+                    title: 'Digital Infrastructure Need',
+                    description: 'Poor internet connectivity affecting remote work and education',
+                    type: 'other',
+                    priority: 'medium',
+                    status: 'pending',
+                    coordinates: [19.9710, 72.7350],
+                    location: 'Town Center, Dahanu',
+                    contact: '9876543232',
+                    reporter: 'Tech Society Dahanu',
+                    reported_date: '2025-01-25',
+                    city: 'Dahanu'
+                },
+                {
+                    id: 'DAH003',
+                    title: 'Tourist Area Maintenance',
+                    description: 'Tourist facilities and signage need improvement and maintenance',
+                    type: 'other',
+                    priority: 'low',
+                    status: 'pending',
+                    coordinates: [19.9695, 72.7340],
+                    location: 'Tourist Area, Dahanu',
+                    contact: '9876543233',
+                    reporter: 'Tourism Board',
+                    reported_date: '2025-01-22',
+                    city: 'Dahanu'
                 }
             ];
-            resolve(sampleIssues);
+            resolve(expandedIssues);
         }, 500);
     });
 }
 
-// Display issues on map
+// Display issues on map with livability context
 function displayIssuesOnMap() {
     if (!map) return;
     
-    // Clear existing issue markers (preserve current selection marker)
     map.eachLayer(function(layer) {
-        if (layer instanceof L.Marker && layer !== currentMarker) {
+        if (layer instanceof L.Marker && layer !== currentMarker && !layer.livabilityMarker) {
             map.removeLayer(layer);
         }
     });
     
-    // Add issue markers
     issuesData.forEach(issue => {
-        const marker = createIssueMarker(issue);
+        const marker = createEnhancedIssueMarker(issue);
         marker.addTo(map);
     });
 }
 
-// Create issue marker
-function createIssueMarker(issue) {
+// Create enhanced issue marker with livability context
+function createEnhancedIssueMarker(issue) {
     const iconColor = getPriorityColor(issue.priority);
     const iconUrl = `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${iconColor}.png`;
     
@@ -604,8 +1182,11 @@ function createIssueMarker(issue) {
         'low': '🟢'
     };
     
+    const cityName = issue.city || extractCityName(issue.location);
+    const livabilityInfo = cityName ? livabilityScores[cityName] : null;
+    
     const popupContent = `
-        <div class="issue-popup" style="min-width: 250px;">
+        <div class="issue-popup" style="min-width: 280px;">
             <h4 style="margin: 0 0 10px 0; color: #333; font-size: 1.1rem;">${issue.title}</h4>
             <p style="margin: 5px 0;"><strong>🏷️ Type:</strong> ${issue.type}</p>
             <p style="margin: 5px 0;"><strong>⚠️ Priority:</strong> ${priorityEmoji[issue.priority]} ${issue.priority.toUpperCase()}</p>
@@ -613,6 +1194,16 @@ function createIssueMarker(issue) {
             <p style="margin: 5px 0;"><strong>📝 Description:</strong> ${issue.description}</p>
             <p style="margin: 5px 0;"><strong>📅 Reported:</strong> ${issue.reported_date}</p>
             <p style="margin: 5px 0;"><strong>📍 Location:</strong> ${issue.location}</p>
+            <p style="margin: 5px 0;"><strong>👤 Reporter:</strong> ${issue.reporter}</p>
+            ${livabilityInfo ? `
+                <div style="background: #f8f9fa; padding: 8px; border-radius: 6px; margin-top: 8px; border-left: 3px solid ${getLivabilityColor(livabilityInfo.overall)};">
+                    <strong style="color: #667eea;">🏆 Area Livability:</strong> 
+                    <span style="font-weight: bold; color: ${getLivabilityColor(livabilityInfo.overall)};">
+                        ${livabilityInfo.overall}/100
+                    </span>
+                    <br><small style="color: #666;">${livabilityInfo.description}</small>
+                </div>
+            ` : ''}
         </div>
     `;
     
@@ -639,14 +1230,14 @@ function filterIssues() {
         displayIssuesOnMap();
     } else {
         map.eachLayer(function(layer) {
-            if (layer instanceof L.Marker && layer !== currentMarker) {
+            if (layer instanceof L.Marker && layer !== currentMarker && !layer.livabilityMarker) {
                 map.removeLayer(layer);
             }
         });
         
         const filteredIssues = issuesData.filter(issue => issue.type === filterValue);
         filteredIssues.forEach(issue => {
-            const marker = createIssueMarker(issue);
+            const marker = createEnhancedIssueMarker(issue);
             marker.addTo(map);
         });
     }
@@ -654,7 +1245,7 @@ function filterIssues() {
     updateComplaintsSidebar(filterValue);
 }
 
-// Update sidebar
+// Update sidebar with livability context
 function updateComplaintsSidebar(filter = '') {
     const sidebar = document.getElementById('area-complaints');
     if (!sidebar) return;
@@ -675,12 +1266,23 @@ function updateComplaintsSidebar(filter = '') {
             'low': '🟢'
         };
         
+        const cityName = issue.city || extractCityName(issue.location);
+        const livabilityInfo = cityName ? livabilityScores[cityName] : null;
+        
         return `
             <div class="complaint-item" onclick="focusIssue(${issue.coordinates[0]}, ${issue.coordinates[1]})" style="cursor: pointer;">
                 <h4>${issue.title}</h4>
                 <p>${issue.description.substring(0, 80)}...</p>
                 <p><strong>📍 Location:</strong> ${issue.location}</p>
                 <p><strong>⚠️ Priority:</strong> ${priorityEmoji[issue.priority]} ${issue.priority}</p>
+                <p><strong>👤 Reporter:</strong> ${issue.reporter}</p>
+                ${livabilityInfo ? `
+                    <p><strong>🏆 Area Score:</strong> 
+                        <span style="color: ${getLivabilityColor(livabilityInfo.overall)}; font-weight: bold;">
+                            ${livabilityInfo.overall}/100
+                        </span>
+                    </p>
+                ` : ''}
                 <span class="complaint-status ${statusClass}">${issue.status}</span>
             </div>
         `;
@@ -694,6 +1296,155 @@ function focusIssue(lat, lng) {
     }
 }
 
+// Show detailed livability information
+function showDetailedLivability(cityName) {
+    const livability = livabilityScores[cityName];
+    if (!livability) return;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 15px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;">
+            <h3 style="margin: 0 0 1rem 0; color: #333; text-align: center;">
+                🏆 ${cityName} Livability Report
+            </h3>
+            
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div style="font-size: 3rem; font-weight: bold; color: ${getLivabilityColor(livability.overall)};">
+                    ${livability.overall}/100
+                </div>
+                <p style="color: #666; margin: 0.5rem 0;">${livability.description}</p>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="color: #333; margin-bottom: 1rem;">📊 Detailed Scores</h4>
+                ${createScoreBar('🏗️ Infrastructure', livability.infrastructure)}
+                ${createScoreBar('🛡️ Safety', livability.safety)}
+                ${createScoreBar('🧹 Cleanliness', livability.cleanliness)}
+                ${createScoreBar('🚌 Connectivity', livability.connectivity)}
+                ${createScoreBar('🏥 Healthcare', livability.healthcare)}
+                ${createScoreBar('🎓 Education', livability.education)}
+                ${createScoreBar('🌱 Environment', livability.environment)}
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="color: #333; margin-bottom: 0.5rem;">🎯 Areas for Improvement</h4>
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    ${livability.improvements.map(item => `<li style="margin: 0.3rem 0; color: #666;">${item}</li>`).join('')}
+                </ul>
+            </div>
+
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;">
+                Close Report
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+}
+
+// Create score bar HTML
+function createScoreBar(label, score) {
+    const percentage = score;
+    const color = getLivabilityColor(score);
+    
+    return `
+        <div style="margin-bottom: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                <span style="font-size: 0.9rem; color: #555;">${label}</span>
+                <span style="font-weight: bold; color: ${color};">${score}</span>
+            </div>
+            <div style="background: #e9ecef; border-radius: 10px; height: 8px; overflow: hidden;">
+                <div style="background: ${color}; height: 100%; width: ${percentage}%; border-radius: 10px; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+    `;
+}
+
+// Show full livability report
+function showFullLivabilityReport() {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    `;
+
+    const cities = Object.keys(livabilityScores);
+    const avgScore = Math.round(cities.reduce((sum, city) => sum + livabilityScores[city].overall, 0) / cities.length);
+
+    modal.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 15px; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto;">
+            <h3 style="margin: 0 0 1.5rem 0; color: #333; text-align: center;">
+                🏆 Palghar District Livability Report 2025
+            </h3>
+            
+            <div style="text-align: center; margin-bottom: 2rem; background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
+                <div style="font-size: 3rem; font-weight: bold; color: ${getLivabilityColor(avgScore)};">
+                    ${avgScore}/100
+                </div>
+                <p style="color: #666; margin: 0.5rem 0; font-size: 1.1rem;">District Average Score</p>
+                <p style="color: #555; font-size: 0.9rem;">Based on ${cities.length} areas analyzed</p>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h4 style="color: #333; margin-bottom: 1rem;">📊 Area Rankings</h4>
+                ${cities
+                    .sort((a, b) => livabilityScores[b].overall - livabilityScores[a].overall)
+                    .map((city, index) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: ${index < 3 ? '#e8f5e8' : '#f8f9fa'}; border-radius: 6px; margin-bottom: 6px;">
+                            <div>
+                                <span style="font-weight: bold;">${index + 1}. ${city}</span>
+                                <br><small style="color: #666;">${livabilityScores[city].description}</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.2rem; font-weight: bold; color: ${getLivabilityColor(livabilityScores[city].overall)};">
+                                    ${livabilityScores[city].overall}
+                                </div>
+                                <small style="color: #666;">Score</small>
+                            </div>
+                        </div>
+                    `).join('')}
+            </div>
+
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer;">
+                Close Report
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+}
+
 // Enhanced alert system
 function showAlert(message, type) {
     const existingAlerts = document.querySelectorAll('.alert');
@@ -701,7 +1452,7 @@ function showAlert(message, type) {
     
     const alert = document.createElement('div');
     alert.className = `alert alert-${type}`;
-    alert.innerHTML = message; // Use innerHTML to support HTML content
+    alert.innerHTML = message;
     
     alert.style.cssText = `
         position: fixed;
@@ -744,13 +1495,20 @@ function showAlert(message, type) {
 // Global function exports
 window.showComplaintForm = showComplaintForm;
 window.hideComplaintForm = hideComplaintForm;
-window.loadIssues = loadIssues;
+window.loadExpandedIssues = loadExpandedIssues;
 window.focusIssue = focusIssue;
+window.showDetailedLivability = showDetailedLivability;
+window.showFullLivabilityReport = showFullLivabilityReport;
+window.toggleLivabilityLayer = toggleLivabilityLayer;
 
-// Debug helper - Remove in production
+// Debug helper
 window.debugMap = function() {
     console.log('Map object:', map);
     console.log('Form open:', isFormOpen);
     console.log('Selected location:', selectedLocation);
     console.log('Current marker:', currentMarker);
+    console.log('Issues data:', issuesData);
+    console.log('Livability data:', livabilityScores);
 };
+
+console.log('🏆 Enhanced JansevaMap with Livability Features loaded successfully');
