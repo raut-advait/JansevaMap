@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JansevaMap - Report Issue</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f8f9fa;
+        }
+
+        /* Header */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-brand h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .nav-brand p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Main container */
+        .main-container {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            height: calc(100vh - 80px);
+            gap: 0;
+        }
+
+        /* Form section */
+        .form-section {
+            background: white;
+            padding: 2rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            background: #e9ecef;
+            color: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Map section */
+        .map-section {
+            position: relative;
+            background: #e9ecef;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .map-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .map-info h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .map-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .location-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .location-display h4 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .location-display p {
+            color: #666;
+            margin: 3px 0;
+            font-size: 14px;
+        }
+
+        /* Success message */
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid #c3e6cb;
+            display: none;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .form-section {
+                padding: 1rem;
+                max-height: 50vh;
+            }
+            
+            .navbar {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h1>JansevaMap</h1>
+            <p>Palghar District - Report Civic Issues</p>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="map.html" class="nav-link active">Report Issue</a>
+            <a href="login.html" class="nav-link">Login</a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Form Section -->
+        <div class="form-section">
+            <h2>📋 Report Civic Issue</h2>
+            
+            <div id="success-message" class="success-message">
+                <strong>✅ Issue reported successfully!</strong><br>
+                <span id="reference-id"></span>
+            </div>
+
+            <div id="location-display" class="location-display" style="display: none;">
+                <h4>📍 Selected Location</h4>
+                <p id="display-area"></p>
+                <p id="display-full-address"></p>
+            </div>
+
+            <form id="issue-form">
+                <!-- Location Details -->
+                <div class="form-group">
+                    <label for="state">🏛️ State</label>
+                    <select id="state" name="state" required>
+                        <option value="">Select State</option>
+                        <option value="Maharashtra" selected>Maharashtra</option>
+                        <option value="Gujarat">Gujarat</option>
+                        <option value="Rajasthan">Rajasthan</option>
+                        <option value="Karnataka">Karnataka</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="district">🏙️ District</label>
+                    <select id="district" name="district" required>
+                        <option value="">Select District</option>
+                        <option value="Palghar" selected>Palghar</option>
+                        <option value="Mumbai">Mumbai</option>
+                        <option value="Thane">Thane</option>
+                        <option value="Pune">Pune</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="city">🏘️ City/Town</label>
+                    <select id="city" name="city" required>
+                        <option value="">Select City</option>
+                        <option value="Palghar City">Palghar City</option>
+                        <option value="Vasai">Vasai</option>
+                        <option value="Virar">Virar</option>
+                        <option value="Nalasopara">Nalasopara</option>
+                        <option value="Boisar">Boisar</option>
+                        <option value="Dahanu">Dahanu</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="area-description">📍 Area Description</label>
+                    <textarea id="area-description" name="area_description" rows="3" required 
+                              placeholder="e.g., Near Railway Station, Main Market, Hospital Road, etc."></textarea>
+                </div>
+
+                <button type="button" id="show-location-btn" class="btn btn-secondary">
+                    🗺️ Show Location on Map
+                </button>
+
+                <!-- Issue Details -->
+                <div class="form-group">
+                    <label for="issue-type">🏷️ Issue Type</label>
+                    <select id="issue-type" name="issue_type" required>
+                        <option value="">Select Issue Type</option>
+                        <option value="road">🛣️ Road Issues</option>
+                        <option value="water">💧 Water Supply</option>
+                        <option value="electricity">⚡ Electricity</option>
+                        <option value="sanitation">🗑️ Sanitation</option>
+                        <option value="drainage">🌊 Drainage</option>
+                        <option value="street-light">💡 Street Lighting</option>
+                        <option value="traffic">🚦 Traffic</option>
+                        <option value="other">❓ Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">📝 Issue Description</label>
+                    <textarea id="description" name="description" rows="4" required 
+                              placeholder="Describe the issue in detail..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="priority">⚠️ Priority Level</label>
+                    <select id="priority" name="priority" required>
+                        <option value="low">🟢 Low</option>
+                        <option value="medium" selected>🟡 Medium</option>
+                        <option value="high">🟠 High</option>
+                        <option value="urgent">🔴 Urgent</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="contact">📞 Contact Number</label>
+                    <input type="tel" id="contact" name="contact" required 
+                           placeholder="Your mobile number" pattern="[0-9]{10}">
+                </div>
+
+                <button type="submit" id="submit-btn" class="btn btn-primary">
+                    📤 Submit Issue Report
+                </button>
+
+                <button type="button" id="reset-btn" class="btn btn-secondary">
+                    🔄 Reset Form
+                </button>
+            </form>
+        </div>
+
+        <!-- Map Section -->
+        <div class="map-section">
+            <div id="map"></div>
+            
+            <div class="map-info">
+                <h4>🗺️ Location Map</h4>
+                <p>Fill out the location details in the form and click "Show Location on Map" to view the area.</p>
+                <p><strong>District:</strong> Palghar, Maharashtra</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Global variables
+        let map = null;
+        let currentMarker = null;
+        let issuesData = [];
+
+        // Location coordinates database for Palghar District
+        const locationDatabase = {
+            'Maharashtra': {
+                'Palghar': {
+                    'Palghar City': { lat: 19.6961, lng: 72.7693 },
+                    'Vasai': { lat: 19.4034, lng: 72.8209 },
+                    'Virar': { lat: 19.4559, lng: 72.7971 },
+                    'Nalasopara': { lat: 19.4239, lng: 72.7890 },
+                    'Boisar': { lat: 19.8031, lng: 72.7569 },
+                    'Dahanu': { lat: 19.9703, lng: 72.7344 }
+                }
+            }
+        };
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initializing JansevaMap...');
+            initializeMap();
+            setupEventListeners();
+            loadExistingIssues();
+        });
+
+        // Initialize map
+        function initializeMap() {
+            // Create map centered on Palghar District
+            map = L.map('map').setView([19.4559, 72.7971], 10);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            console.log('✅ Map initialized');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Show location button
+            document.getElementById('show-location-btn').addEventListener('click', showLocationOnMap);
+            
+            // Form submission
+            document.getElementById('issue-form').addEventListener('submit', submitIssue);
+            
+            // Reset button
+            document.getElementById('reset-btn').addEventListener('click', resetForm);
+            
+            console.log('✅ Event listeners setup complete');
+        }
+
+        // Show location on map
+        function showLocationOnMap() {
+            const state = document.getElementById('state').value;
+            const district = document.getElementById('district').value;
+            const city = document.getElementById('city').value;
+            const areaDescription = document.getElementById('area-description').value;
+
+            if (!state || !district || !city || !areaDescription) {
+                alert('❌ Please fill in all location fields first!');
+                return;
+            }
+
+            // Get coordinates from database
+            const coordinates = getLocationCoordinates(state, district, city);
+            
+            if (!coordinates) {
+                alert('❌ Location not found in our database. Please check your selection.');
+                return;
+            }
+
+            // Remove existing marker
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+
+            // Add new marker
+            currentMarker = L.marker([coordinates.lat, coordinates.lng], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+
+            // Create popup content
+            const popupContent = `
+                <div style="text-align: center; min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: #333;">📍 Selected Location</h4>
+                    <p style="margin: 5px 0;"><strong>City:</strong> ${city}</p>
+                    <p style="margin: 5px 0;"><strong>District:</strong> ${district}</p>
+                    <p style="margin: 5px 0;"><strong>State:</strong> ${state}</p>
+                    <p style="margin: 5px 0;"><strong>Area:</strong> ${areaDescription}</p>
+                </div>
+            `;
+
+            currentMarker.bindPopup(popupContent).openPopup();
+
+            // Center map on location
+            map.setView([coordinates.lat, coordinates.lng], 14);
+
+            // Update location display
+            updateLocationDisplay(state, district, city, areaDescription);
+
+            console.log('✅ Location shown on map:', coordinates);
+        }
+
+        // Get location coordinates
+        function getLocationCoordinates(state, district, city) {
+            try {
+                return locationDatabase[state][district][city];
+            } catch (error) {
+                console.error('Location not found:', error);
+                return null;
+            }
+        }
+
+        // Update location display
+        function updateLocationDisplay(state, district, city, areaDescription) {
+            const displayDiv = document.getElementById('location-display');
+            const areaSpan = document.getElementById('display-area');
+            const addressSpan = document.getElementById('display-full-address');
+
+            areaSpan.textContent = `${city}, ${district}`;
+            addressSpan.textContent = `${areaDescription}, ${city}, ${district}, ${state}`;
+
+            displayDiv.style.display = 'block';
+        }
+
+        // Submit issue
+        function submitIssue(e) {
+            e.preventDefault();
+
+            // Validate location is shown
+            if (!currentMarker) {
+                alert('❌ Please show the location on map first!');
+                return;
+            }
+
+            // Get form data
+            const formData = new FormData(e.target);
+            const issueData = {
+                id: generateIssueId(),
+                state: formData.get('state'),
+                district: formData.get('district'),
+                city: formData.get('city'),
+                area_description: formData.get('area_description'),
+                issue_type: formData.get('issue_type'),
+                description: formData.get('description'),
+                priority: formData.get('priority'),
+                contact: formData.get('contact'),
+                coordinates: {
+                    lat: currentMarker.getLatLng().lat,
+                    lng: currentMarker.getLatLng().lng
+                },
+                status: 'pending',
+                reported_date: new Date().toISOString().split('T')[0],
+                reported_time: new Date().toLocaleTimeString()
+            };
+
+            console.log('📤 Submitting issue:', issueData);
+
+            // Show loading
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.innerHTML = '<span class="loading"></span> Submitting...';
+            submitBtn.disabled = true;
+
+            // Simulate submission delay
+            setTimeout(() => {
+                // Add issue to map
+                addIssueToMap(issueData);
+                
+                // Show success message
+                showSuccessMessage(issueData.id);
+                
+                // Reset form
+                resetForm();
+                
+                // Restore button
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+
+                console.log('✅ Issue submitted successfully');
+            }, 2000);
+        }
+
+        // Add issue to map
+        function addIssueToMap(issueData) {
+            const color = getPriorityColor(issueData.priority);
+            const marker = L.marker([issueData.coordinates.lat, issueData.coordinates.lng], {
+                icon: L.icon({
+                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+
+            const priorityEmoji = {
+                'urgent': '🔴',
+                'high': '🟠',
+                'medium': '🟡',
+                'low': '🟢'
+            };
+
+            const popupContent = `
+                <div style="min-width: 250px;">
+                    <h4 style="margin: 0 0 10px 0; color: #333;">${issueData.issue_type.toUpperCase()}</h4>
+                    <p style="margin: 5px 0;"><strong>📍 Location:</strong> ${issueData.area_description}, ${issueData.city}</p>
+                    <p style="margin: 5px 0;"><strong>📝 Description:</strong> ${issueData.description}</p>
+                    <p style="margin: 5px 0;"><strong>⚠️ Priority:</strong> ${priorityEmoji[issueData.priority]} ${issueData.priority.toUpperCase()}</p>
+                    <p style="margin: 5px 0;"><strong>📅 Reported:</strong> ${issueData.reported_date}</p>
+                    <p style="margin: 5px 0;"><strong>🆔 ID:</strong> ${issueData.id}</p>
+                </div>
+            `;
+
+            marker.bindPopup(popupContent);
+            issuesData.push(issueData);
+        }
+
+        // Get priority color
+        function getPriorityColor(priority) {
+            const colors = {
+                'urgent': 'red',
+                'high': 'orange',
+                'medium': 'yellow',
+                'low': 'green'
+            };
+            return colors[priority] || 'blue';
+        }
+
+        // Show success message
+        function showSuccessMessage(issueId) {
+            const successDiv = document.getElementById('success-message');
+            const referenceSpan = document.getElementById('reference-id');
+            
+            referenceSpan.textContent = `Reference ID: ${issueId}`;
+            successDiv.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('issue-form').reset();
+            document.getElementById('location-display').style.display = 'none';
+            document.getElementById('success-message').style.display = 'none';
+            
+            // Reset dropdowns to default
+            document.getElementById('state').value = 'Maharashtra';
+            document.getElementById('district').value = 'Palghar';
+            document.getElementById('priority').value = 'medium';
+            
+            // Remove marker
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+                currentMarker = null;
+            }
+            
+            // Reset map view
+            map.setView([19.4559, 72.7971], 10);
+        }
+
+        // Generate issue ID
+        function generateIssueId() {
+            const prefix = 'PLG';
+            const timestamp = Date.now().toString().slice(-6);
+            return `${prefix}${timestamp}`;
+        }
+
+        // Load existing sample issues
+        function loadExistingIssues() {
+            const sampleIssues = [
+                {
+                    id: 'PLG001',
+                    coordinates: { lat: 19.6961, lng: 72.7693 },
+                    issue_type: 'road',
+                    description: 'Major pothole on main road',
+                    priority: 'urgent',
+                    city: 'Palghar City',
+                    area_description: 'Near Railway Station'
+                },
+                {
+                    id: 'VAS001',
+                    coordinates: { lat: 19.4034, lng: 72.8209 },
+                    issue_type: 'water',
+                    description: 'Water supply shortage',
+                    priority: 'high',
+                    city: 'Vasai',
+                    area_description: 'Residential Area'
+                },
+                {
+                    id: 'VIR001',
+                    coordinates: { lat: 19.4559, lng: 72.7971 },
+                    issue_type: 'electricity',
+                    description: 'Street lights not working',
+                    priority: 'medium',
+                    city: 'Virar',
+                    area_description: 'Market Street'
+                }
+            ];
+
+            // Add sample issues to map
+            sampleIssues.forEach(issue => {
+                const color = getPriorityColor(issue.priority);
+                const marker = L.marker([issue.coordinates.lat, issue.coordinates.lng], {
+                    icon: L.icon({
+                        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    })
+                }).addTo(map);
+
+                marker.bindPopup(`
+                    <div>
+                        <h4>${issue.issue_type.toUpperCase()}</h4>
+                        <p><strong>Location:</strong> ${issue.area_description}, ${issue.city}</p>
+                        <p><strong>Description:</strong> ${issue.description}</p>
+                        <p><strong>Priority:</strong> ${issue.priority}</p>
+                        <p><strong>ID:</strong> ${issue.id}</p>
+                    </div>
+                `);
+            });
+
+            issuesData = [...sampleIssues];
+            console.log('✅ Sample issues loaded');
+        }
+
+        console.log('📱 JansevaMap application loaded successfully');
+    </script>
+</body>
+</html>

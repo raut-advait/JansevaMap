@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Support - JansevaMap</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h1>JansevaMap</h1>
+                <p>Citizen Complaint Management System</p>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="map.html" class="nav-link">Map</a>
+                <a href="chat.html" class="nav-link active">Chat Support</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="chat-section">
+            <div class="chat-header">
+                <h2>AI Assistant Support</h2>
+                <p>Get help with your complaints and queries</p>
+            </div>
+            
+            <div id="chat-messages" class="chat-messages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <p>Hello! I'm your AI assistant. How can I help you today? You can ask me about:</p>
+                        <ul>
+                            <li>How to file a complaint</li>
+                            <li>Status of your existing complaints</li>
+                            <li>Information about different issue types</li>
+                            <li>General queries about civic services</li>
+                        </ul>
+                    </div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chat-input" placeholder="Type your message here..." maxlength="500">
+                    <button id="send-btn" class="send-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22,2 15,22 11,13 2,9"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                <div class="chat-status" id="chat-status">Ready</div>
+            </div>
+            
+            <div class="quick-actions">
+                <button class="quick-action-btn" data-message="How do I file a complaint?">File Complaint</button>
+                <button class="quick-action-btn" data-message="Check my complaint status">Check Status</button>
+                <button class="quick-action-btn" data-message="What types of issues can I report?">Issue Types</button>
+                <button class="quick-action-btn" data-message="How long does it take to resolve complaints?">Resolution Time</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>JansevaMap</h3>
+                <p>Empowering citizens through technology</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="map.html">Map</a></li>
+                    <li><a href="#about">About Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>📞 1800-123-4567</p>
+                <p>📧 support@jansevamap.gov.in</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 JansevaMap. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/chat.js"></script>
+</body>
+</html>
