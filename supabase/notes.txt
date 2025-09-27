@@ -1,0 +1,206 @@
+# JansevaMap - Supabase Setup Notes
+
+## Database Setup
+
+### 1. Create Supabase Project
+1. Go to [supabase.com](https://supabase.com)
+2. Create a new project
+3. Note down your project URL and API key
+
+### 2. Run Schema Migration
+```bash
+# Install Supabase CLI
+npm install -g supabase
+
+# Initialize Supabase in your project
+supabase init
+
+# Link to your remote project
+supabase link --project-ref YOUR_PROJECT_REF
+
+# Run the schema migration
+supabase db push
+```
+
+### 3. Environment Variables
+Create a `.env` file in your project root:
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+## API Integration
+
+### 1. Frontend Integration
+```javascript
+// Install Supabase client
+npm install @supabase/supabase-js
+
+// Initialize client
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'your_supabase_url'
+const supabaseKey = 'your_supabase_anon_key'
+const supabase = createClient(supabaseUrl, supabaseKey)
+```
+
+### 2. Backend Integration (Python)
+```python
+# Install Supabase Python client
+pip install supabase
+
+# Initialize client
+from supabase import create_client, Client
+
+url = "your_supabase_url"
+key = "your_supabase_service_role_key"
+supabase: Client = create_client(url, key)
+```
+
+## Key Features
+
+### 1. Real-time Subscriptions
+```javascript
+// Subscribe to complaint updates
+const subscription = supabase
+  .channel('complaints')
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'complaints'
+  }, (payload) => {
+    console.log('Complaint updated:', payload)
+  })
+  .subscribe()
+```
+
+### 2. Authentication
+```javascript
+// Sign up user
+const { data, error } = await supabase.auth.signUp({
+  email: 'user@example.com',
+  password: 'password'
+})
+
+// Sign in user
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password'
+})
+```
+
+### 3. File Storage
+```javascript
+// Upload complaint images
+const { data, error } = await supabase.storage
+  .from('complaint-images')
+  .upload('complaint-123.jpg', file)
+```
+
+## Database Functions
+
+### 1. Generate Complaint ID
+```sql
+SELECT generate_complaint_id();
+-- Returns: JSM20240115001
+```
+
+### 2. Update Complaint Status
+```sql
+SELECT update_complaint_status(
+  'JSM20240115001',
+  'resolved',
+  'Issue has been fixed',
+  'user-uuid-here'
+);
+```
+
+### 3. Get Area Performance
+```sql
+SELECT * FROM area_performance;
+```
+
+## Security Considerations
+
+### 1. Row Level Security (RLS)
+- All tables have RLS enabled
+- Policies control data access
+- Users can only see their own data
+- Staff can update complaints
+
+### 2. API Keys
+- Use anon key for frontend
+- Use service role key for backend
+- Never expose service role key in frontend
+
+### 3. Data Validation
+- All inputs are validated
+- SQL injection protection
+- XSS protection
+
+## Performance Optimization
+
+### 1. Indexes
+- Spatial indexes on coordinates
+- B-tree indexes on frequently queried columns
+- Composite indexes for complex queries
+
+### 2. Views
+- Pre-computed views for common queries
+- Materialized views for heavy aggregations
+
+### 3. Caching
+- Use Supabase's built-in caching
+- Implement Redis for session storage
+
+## Monitoring
+
+### 1. Database Metrics
+- Query performance
+- Connection pool usage
+- Storage usage
+
+### 2. Application Metrics
+- API response times
+- Error rates
+- User activity
+
+### 3. Alerts
+- Set up alerts for critical issues
+- Monitor complaint resolution times
+- Track system performance
+
+## Backup and Recovery
+
+### 1. Automated Backups
+- Supabase provides automated daily backups
+- Point-in-time recovery available
+- Cross-region replication
+
+### 2. Manual Backups
+```bash
+# Export database
+supabase db dump --data-only > backup.sql
+
+# Restore database
+supabase db reset
+psql -h localhost -p 54322 -U postgres -d postgres < backup.sql
+```
+
+## Troubleshooting
+
+### 1. Common Issues
+- Connection timeouts
+- RLS policy conflicts
+- Index performance issues
+
+### 2. Debug Tools
+- Supabase Dashboard
+- Query performance analyzer
+- Log analysis tools
+
+### 3. Support
+- Supabase documentation
+- Community forums
+- Enterprise support available
