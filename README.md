@@ -1,341 +1,230 @@
-# JansevaMap - Citizen Complaint Management System
+Here's the updated README.md for the JansevaMap demo project:
 
-JansevaMap is a comprehensive citizen complaint management system that empowers citizens to report civic issues, track their resolution progress, and interact with an AI-powered chatbot for support. Built with modern web technologies and designed for scalability and user-friendliness.
+# JansevaMap - Citizen Complaint Management System Demo
 
-## 🌟 Features
+JansevaMap is a **demonstration prototype** of a citizen complaint management system designed to showcase modern civic engagement features. This is a **frontend-only demo** with simulated data and features, created to demonstrate the potential of digital civic platforms for Palghar District, Maharashtra.
+
+## 🚨 Important Note
+
+**This is a DEMO/PROTOTYPE project and is NOT production-ready.** The system uses simulated data, mock APIs, and frontend-only functionality for demonstration purposes. It is not connected to any real government systems or databases.
+
+## 🌟 Demo Features
 
 ### 🗺️ Interactive Map Interface
-- **Location-based Reporting**: Click on map to pinpoint exact issue location
-- **Real-time Updates**: Live complaint markers with status indicators
-- **Area Filtering**: Filter complaints by geographical areas
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Location Selection**: Dropdown-based location selection (State → District → City)
+- **Livability Scores**: View area-wise livability ratings and detailed reports
+- **Issue Visualization**: See sample complaints plotted on the map with priority indicators
+- **Responsive Design**: Works on desktop and mobile browsers
 
-### 📱 Multi-page Application
-- **Home Page**: Overview dashboard with statistics and recent complaints
-- **Map Page**: Interactive map for reporting and viewing complaints
-- **Chat Page**: AI-powered support chatbot
+### 📊 Livability Scoring System
+- **Area-wise Scoring**: Comprehensive scores for 9 Palghar areas
+- **Multiple Metrics**: Infrastructure, Safety, Cleanliness, Connectivity, Healthcare, Education, Environment
+- **Interactive Reports**: Detailed breakdowns with improvement suggestions
+- **Visual Indicators**: Color-coded scoring system
 
-### 🤖 AI Chatbot Support
-- **Perplexity API Integration**: Uses advanced AI for intelligent, up-to-date responses
-- **Intent Recognition**: Understands user queries and provides relevant responses
-- **Real-time Information**: Access to current policies, laws, and civic service updates
-- **Contextual Help**: Provides step-by-step guidance for complaint filing
-- **Offline Fallback**: Works even when external services are unavailable
+### 📱 Multi-page Demonstration
+- **Home Page**: Overview dashboard with statistics and features
+- **Map Page**: Interactive complaint reporting and livability visualization
+- **Login Page**: Themed authentication interface (demo only)
 
-### 📊 Analytics & Reporting
-- **Real-time Statistics**: Live dashboard with complaint metrics
-- **Area Performance**: Track resolution rates by geographical areas
-- **Resolution Tracking**: Monitor average resolution times
-- **User Engagement**: Track active users and system usage
+### 🎯 Sample Data
+- **25+ Mock Complaints**: Distributed across different Palghar areas
+- **Multiple Issue Types**: Road, Water, Electricity, Sanitation, Drainage, Traffic
+- **Status Tracking**: Pending, Processing, Resolved status indicators
+- **Priority Levels**: Low, Medium, High, Urgent classifications
 
-## 🏗️ Architecture
+## 🏗️ Technology Stack
 
-### Frontend
+### Frontend Only
 - **HTML5/CSS3/JavaScript**: Modern, responsive web interface
 - **Leaflet.js**: Interactive mapping functionality
-- **Progressive Enhancement**: Works without JavaScript for basic functionality
-- **Mobile-first Design**: Optimized for mobile devices
+- **CSS Grid/Flexbox**: Responsive layout system
+- **Local Storage**: Client-side data persistence (demo)
 
-### Backend Services
-- **Flask Chatbot**: Python-based AI service with Perplexity API integration
-- **Perplexity AI**: Advanced language model for intelligent responses
-- **Supabase Integration**: PostgreSQL database with real-time capabilities
-- **RESTful APIs**: Clean, documented API endpoints
-- **Authentication**: Secure user management and access control
-
-### Database
-- **PostgreSQL**: Robust, scalable database with PostGIS for spatial data
-- **Real-time Subscriptions**: Live updates for complaint status changes
-- **Row Level Security**: Fine-grained access control
-- **Spatial Indexing**: Optimized for location-based queries
+### Demo Components
+- **Mock Database**: Hardcoded JavaScript objects simulating real data
+- **Simulated APIs**: Frontend functions mimicking backend responses
+- **Sample Coordinates**: Real Palghar District location data
+- **Dummy Authentication**: Demo login system (no real security)
 
 ## 📁 Project Structure
 
 ```
-project-root/
-├── frontend/
-│   ├── index.html          # Home page with dashboard
-│   ├── map.html            # Interactive map interface
-│   ├── chat.html           # AI chatbot interface
-│   ├── css/
-│   │   └── styles.css      # Main stylesheet
-│   └── js/
-│       ├── app.js          # Main application logic
-│       └── chat.js         # Chatbot integration
-├── chatbot/
-│   ├── app.py              # Flask chatbot service
-│   └── requirements.txt    # Python dependencies
-├── supabase/
-│   ├── schema.sql          # Database schema
-│   └── notes.txt           # Setup and integration notes
+jansevamap-demo/
+├── index.html              # Home page with features overview
+├── map.html                 # Interactive map and complaint demo
+├── login.html               # Demo login interface
+├── css/
+│   └── styles.css          # Main stylesheet (responsive design)
+├── js/
+│   └── app.js              # Main application logic and demo data
+├── assets/
+│   └── images/             # Icons and graphics
 └── README.md               # This file
 ```
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Demo Setup)
 
 ### Prerequisites
-- Python 3.9+
-- Node.js 16+ (for Supabase CLI)
-- Modern web browser
-- Supabase account
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Local web server (optional but recommended)
 
-### 1. Database Setup
+### 1. Download/Clone the Demo
 ```bash
-# Install Supabase CLI
-npm install -g supabase
-
-# Initialize Supabase project
-supabase init
-
-# Link to your remote project
-supabase link --project-ref YOUR_PROJECT_REF
-
-# Run database migrations
-supabase db push
+# Download the project files
+# Extract to your preferred directory
 ```
 
-### 2. Environment Setup
+### 2. Serve the Files
 ```bash
-# Create environment file
-cp .env.example .env
-
-# Edit .env with your Supabase credentials
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-### 3. Start Chatbot Service
-```bash
-# Navigate to chatbot directory
-cd chatbot
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the service
-python app.py
-```
-
-### 4. Test Perplexity API Integration
-```bash
-# Run the test script
-python test_perplexity.py
-
-# Or test manually via API
-curl -X POST http://localhost:5000/test-perplexity \
-  -H "Content-Type: application/json" \
-  -d '{"message": "What are the latest civic service policies?"}'
-```
-
-### 5. Serve Frontend
-```bash
-# Serve frontend files (use any HTTP server)
-# Option 1: Python
+# Option 1: Python (if installed)
 python -m http.server 8000
 
-# Option 2: Node.js
-npx serve frontend
+# Option 2: Node.js (if installed)
+npx serve .
 
 # Option 3: Live Server (VS Code extension)
 # Right-click on index.html and select "Open with Live Server"
 ```
 
-### 6. Access Application
+### 3. Access the Demo
 - Open browser to `http://localhost:8000`
-- Chatbot service runs on `http://localhost:5000`
-- Test Perplexity integration at `http://localhost:5000/test-perplexity`
+- Navigate through different pages to explore features
+- Test the interactive map and complaint submission
+- View livability scores and reports
 
-## 🔧 Configuration
+### 4. Demo Usage Guide
+1. **Home Page**: Overview of features and statistics
+2. **Map Page**: 
+   - Select State (Maharashtra) → District (Palghar) → City
+   - Click "Show Location & Livability" to see area on map
+   - Fill complaint form and submit (demo submission)
+   - Toggle livability layer to see area scores
+3. **Login Page**: Demo interface (use any credentials)
 
-### Frontend Configuration
-Edit `frontend/js/app.js` to configure:
-- Default map center coordinates
-- API endpoints
-- Notification settings
-- Map tile providers
+## 📊 Demo Data
 
-### Chatbot Configuration
-Edit `chatbot/app.py` to configure:
-- Response templates
-- Intent patterns
-- Database connections
-- Logging levels
-- Perplexity API settings
+### Sample Areas Covered
+- Palghar City (Score: 78/100)
+- Vasai East (Score: 82/100) 
+- Vasai West (Score: 79/100)
+- Virar East (Score: 76/100)
+- Virar West (Score: 80/100)
+- Nalasopara East (Score: 74/100)
+- Nalasopara West (Score: 77/100)
+- Boisar (Score: 71/100)
+- Dahanu (Score: 83/100)
 
-### Database Configuration
-Edit `supabase/schema.sql` to configure:
-- User roles and permissions
-- Complaint types and priorities
-- Area definitions
-- System settings
+### Mock Complaint Categories
+- 🛣️ Road Issues (potholes, damages)
+- 💧 Water Supply (shortages, quality)
+- ⚡ Electricity (outages, street lights)
+- 🗑️ Sanitation (garbage, cleanliness)
+- 🌊 Drainage (waterlogging, sewerage)
+- 🚦 Traffic (signals, congestion)
+- ❓ Other civic issues
 
-## 📱 Usage Guide
+## 🎨 Features Demonstrated
 
-### For Citizens
+### User Interface
+- **Responsive Design**: Mobile-friendly layout
+- **Modern Aesthetics**: Clean, government-appropriate styling
+- **Accessibility**: Semantic HTML and keyboard navigation
+- **Progressive Enhancement**: Works without JavaScript for basic features
 
-#### Reporting a Complaint
-1. Navigate to the Map page
-2. Click "Report Issue" button
-3. Select issue type from dropdown
-4. Describe the problem in detail
-5. Click on map to select exact location
-6. Enter contact information
-7. Submit complaint
+### Interactive Elements
+- **Dynamic Forms**: Real-time validation and feedback
+- **Map Integration**: Leaflet.js with custom markers
+- **Modal Dialogs**: Detailed livability reports
+- **Filter Systems**: Issue type and area filtering
+- **Status Indicators**: Visual complaint status tracking
 
-#### Tracking Progress
-1. Visit the Home page
-2. Check "Recent Complaints" section
-3. Look for your complaint by ID or description
-4. Monitor status updates (Pending → Processing → Resolved)
+### Data Visualization
+- **Area Scoring**: Color-coded livability metrics
+- **Progress Bars**: Visual score representations
+- **Statistics Dashboard**: Count displays and metrics
+- **Geographic Plotting**: Location-based complaint mapping
 
-#### Getting Help
-1. Go to Chat page
-2. Type your question or use quick action buttons
-3. Get instant AI-powered responses with real-time information
-4. Ask about current policies, laws, or recent developments
-5. Contact support if needed
+## 🔮 Future Development Ideas
 
-### For Administrators
+### Backend Integration
+- **Database**: MySQL/PostgreSQL for real data storage
+- **API Layer**: RESTful services for complaint management
+- **Authentication**: Secure user management system
+- **File Uploads**: Image/document attachment support
 
-#### Managing Complaints
-1. Access admin dashboard (requires authentication)
-2. View all complaints with filtering options
-3. Update complaint status and add notes
-4. Assign complaints to staff members
-5. Monitor resolution timelines
+### Advanced Features
+- **Real-time Updates**: WebSocket connections for live status
+- **Mobile App**: Native Android/iOS applications
+- **SMS Integration**: Automated status notifications
+- **Analytics Dashboard**: Government official portal
+- **Multi-language**: Hindi and Marathi language support
 
-#### Analytics Dashboard
-1. View real-time statistics
-2. Analyze area performance metrics
-3. Track resolution rates and times
-4. Monitor user engagement
+### Government Integration
+- **Department APIs**: Connect to actual civic departments
+- **Workflow Management**: Official complaint routing
+- **Digital Signatures**: Authenticated status updates
+- **Compliance Tracking**: SLA monitoring and reporting
 
-## 🔒 Security Features
+## ⚠️ Limitations & Disclaimers
 
-### Data Protection
-- **Encryption**: All sensitive data encrypted at rest and in transit
-- **Authentication**: Secure user authentication with Supabase Auth
-- **Authorization**: Role-based access control (RBAC)
-- **Input Validation**: Comprehensive input sanitization and validation
+### What This Demo IS:
+- ✅ User interface prototype
+- ✅ Feature demonstration
+- ✅ Technology proof-of-concept
+- ✅ Design showcase
 
-### Privacy
-- **Data Minimization**: Only collect necessary information
-- **User Consent**: Clear privacy policy and consent mechanisms
-- **Data Retention**: Configurable data retention policies
-- **GDPR Compliance**: Built-in privacy controls
+### What This Demo IS NOT:
+- ❌ Production-ready system
+- ❌ Connected to real government services
+- ❌ Actual complaint processing system
+- ❌ Secure data handling platform
+- ❌ Real-time data source
 
-### API Security
-- **Rate Limiting**: Prevent abuse and DoS attacks
-- **CORS Configuration**: Proper cross-origin resource sharing
-- **SQL Injection Protection**: Parameterized queries and input validation
-- **XSS Protection**: Content Security Policy and input sanitization
+### Known Demo Limitations:
+- No backend server or database
+- Simulated API responses with delays
+- Mock authentication (no real security)
+- Hardcoded sample data
+- No actual complaint routing
+- No real file upload capability
+- No SMS/email notifications
 
-## 🚀 Deployment
+## 🤝 Contributing to the Demo
 
-### Production Deployment
+### Enhancement Ideas
+- Additional area coverage
+- More complaint categories
+- Enhanced visualizations
+- Better mobile responsiveness
+- Accessibility improvements
 
-#### Frontend (Static Hosting)
-```bash
-# Build optimized version
-npm run build
-
-# Deploy to static hosting
-# Options: Netlify, Vercel, GitHub Pages, AWS S3
-```
-
-#### Chatbot Service (Container)
-```bash
-# Build Docker image
-docker build -t jansevamap-chatbot ./chatbot
-
-# Run container
-docker run -p 5000:5000 jansevamap-chatbot
-```
-
-#### Database (Supabase)
-- Use Supabase managed hosting
-- Configure production environment variables
-- Set up monitoring and alerts
-- Enable automated backups
-
-### Environment Variables
-```env
-# Production Environment
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_production_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_production_service_key
-FLASK_ENV=production
-DEBUG=false
-```
-
-## 📊 Monitoring & Analytics
-
-### Key Metrics
-- **Complaint Volume**: Total complaints by type and area
-- **Resolution Rate**: Percentage of resolved complaints
-- **Average Resolution Time**: Time from submission to resolution
-- **User Engagement**: Active users and session duration
-- **System Performance**: Response times and error rates
-
-### Monitoring Tools
-- **Supabase Dashboard**: Database metrics and performance
-- **Application Logs**: Error tracking and debugging
-- **User Analytics**: Behavior tracking and optimization
-- **Performance Monitoring**: Response time and availability
-
-## 🤝 Contributing
-
-### Development Setup
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/new-feature`
-3. Make changes and test thoroughly
-4. Commit changes: `git commit -m 'Add new feature'`
-5. Push to branch: `git push origin feature/new-feature`
-6. Submit pull request
-
-### Code Standards
-- **JavaScript**: ESLint configuration
-- **Python**: PEP 8 compliance
-- **CSS**: BEM methodology
-- **HTML**: Semantic markup and accessibility
-
-### Testing
-- **Unit Tests**: Test individual components
-- **Integration Tests**: Test API endpoints
-- **E2E Tests**: Test complete user workflows
-- **Performance Tests**: Load and stress testing
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Code Improvements
+- Modular JavaScript architecture
+- CSS optimization
+- Performance enhancements
+- Cross-integration testing
+- Code documentation
 
 ## 🙏 Acknowledgments
 
 - **OpenStreetMap**: For providing free map tiles
-- **Leaflet.js**: For the mapping library
-- **Supabase**: For the backend-as-a-service platform
-- **Flask**: For the Python web framework
-- **Community Contributors**: For feedback and contributions
+- **Leaflet.js**: For the excellent mapping library
+- **Palghar District**: For location data and civic inspiration
+- **Open Source Community**: For tools and libraries used
 
-## 📞 Support
+## 📞 Demo Support
 
-### Documentation
-- [User Guide](docs/user-guide.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Troubleshooting](docs/troubleshooting.md)
+### For Demo Questions
+- **Purpose**: Understanding features and capabilities
+- **Technical**: Implementation details and code structure
+- **Customization**: Adapting for other regions/use cases
 
-### Contact
-- **Email**: support@jansevamap.gov.in
-- **Phone**: 1800-123-4567
-- **Website**: https://jansevamap.gov.in
-- **GitHub Issues**: [Report bugs and feature requests](https://github.com/jansevamap/issues)
+### Not for Production Use
+This demo is for **educational and presentation purposes only**. For actual civic complaint systems, proper backend infrastructure, security measures, and government integration would be required.
 
-### Community
-- **Discord**: [Join our community](https://discord.gg/jansevamap)
-- **Twitter**: [@JansevaMap](https://twitter.com/jansevamap)
-- **LinkedIn**: [JansevaMap](https://linkedin.com/company/jansevamap)
+***
 
----
+**JansevaMap Demo** - Showcasing the future of digital civic engagement through technology.
 
-**JansevaMap** - Empowering citizens through technology for better civic services.
+*Note: This is a demonstration prototype. Any resemblance to actual government systems is purely conceptual.*
