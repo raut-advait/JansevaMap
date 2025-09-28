@@ -1,5 +1,3 @@
-Here's the updated README.md for the JansevaMap demo project:
-
 # JansevaMap - Citizen Complaint Management System Demo
 
 JansevaMap is a **demonstration prototype** of a citizen complaint management system designed to showcase modern civic engagement features. This is a **frontend-only demo** with simulated data and features, created to demonstrate the potential of digital civic platforms for Palghar District, Maharashtra.
@@ -228,3 +226,4 @@ This demo is for **educational and presentation purposes only**. For actual civi
 **JansevaMap Demo** - Showcasing the future of digital civic engagement through technology.
 
 *Note: This is a demonstration prototype. Any resemblance to actual government systems is purely conceptual.*
+
